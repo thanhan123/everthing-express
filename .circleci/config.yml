@@ -1,0 +1,77 @@
+# CircleCI 2.1 configuration
+version: 2.1
+
+orbs:
+  node: circleci/node@5.0.0
+  aws-cli: circleci/aws-cli@4.1.0
+  aws-ecr: circleci/aws-ecr@8.0.0
+
+jobs:
+  build-and-push-docker-image:
+    docker:
+      - image: cimg/base:2024.06
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.17
+      - run:
+          name: Install Node.js dependencies
+          command: npm install
+      - run:
+          name: Run tests (placeholder)
+          command: npm test
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+          aws-region: AWS_REGION
+      - aws-ecr/build-and-push-image:
+          repo: ${ECR_REPOSITORY_NAME}
+          tag: ${CIRCLE_SHA1} # Use commit SHA as tag
+          # Path to your Dockerfile and context if not in root
+          # dockerfile: Dockerfile
+          # path: .
+
+  deploy-to-ecs-fargate:
+    docker:
+      - image: cimg/base:2024.06
+    steps:
+      - checkout
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+          aws-region: AWS_REGION
+      - run:
+          name: Deploy CloudFormation Stack
+          command: |
+            # Replace with your actual VPC and Subnet IDs
+            VPC_ID="vpc-xxxxxxxxxxxxxxxxx" # <<-- IMPORTANT: Replace with your VPC ID
+            SUBNET_IDS="subnet-xxxxxxxxxxxxxxxxx,subnet-yyyyyyyyyyyyyyyyy" # <<-- IMPORTANT: Replace with your Subnet IDs
+
+            aws cloudformation deploy \
+              --stack-name ${APP_NAME}-FargateStack \
+              --template-file ecs-fargate-stack.yml \
+              --capabilities CAPABILITY_IAM \
+              --parameter-overrides \
+                AppName=${APP_NAME} \
+                ImageRepositoryName=${ECR_REPOSITORY_NAME} \
+                ImageTag=${CIRCLE_SHA1} \
+                VpcId=${VPC_ID} \
+                SubnetIds=${SUBNET_IDS} \
+              --region ${AWS_REGION}
+    environment:
+      APP_NAME: my-express-app # Match your CloudFormation AppName parameter
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build-and-push-docker-image:
+          filters:
+            branches:
+              only: main
+      - deploy-to-ecs-fargate:
+          requires:
+            - build-and-push-docker-image # This job runs after the Docker image is pushed
+          filters:
+            branches:
+              only: main
