@@ -230,6 +230,7 @@ Resources:
   # --- ECS Service ---
   EcsService:
     Type: AWS::ECS::Service
+    DependsOn: HTTPListener
     Properties:
       Cluster: !Ref EcsCluster
       ServiceName: !Sub ${AppName}-Service
