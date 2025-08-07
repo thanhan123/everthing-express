@@ -21,14 +21,14 @@ jobs:
           name: Run tests (placeholder)
           command: npm test
       - aws-cli/setup:
-          aws-access-key-id: AWS_ACCESS_KEY_ID
-          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
-          aws-region: AWS_REGION
+          aws-access-key-id: ${AWS_ACCESS_KEY_ID}
+          aws-secret-access-key: ${AWS_SECRET_ACCESS_KEY}
+          aws-region: ${AWS_REGION}
       - aws-ecr/build-and-push-image:
           repo: ${ECR_REPOSITORY_NAME}
           tag: ${CIRCLE_SHA1} # Use commit SHA as tag
           # Path to your Dockerfile and context if not in root
-          # dockerfile: Dockerfile
+          dockerfile: Dockerfile
           # path: .
 
   deploy-to-ecs-fargate:
@@ -37,16 +37,12 @@ jobs:
     steps:
       - checkout
       - aws-cli/setup:
-          aws-access-key-id: AWS_ACCESS_KEY_ID
-          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
-          aws-region: AWS_REGION
+          aws-access-key-id: ${AWS_ACCESS_KEY_ID}
+          aws-secret-access-key: ${AWS_SECRET_ACCESS_KEY}
+          aws-region: ${AWS_REGION}
       - run:
           name: Deploy CloudFormation Stack
           command: |
-            # Replace with your actual VPC and Subnet IDs
-            VPC_ID="vpc-xxxxxxxxxxxxxxxxx" # <<-- IMPORTANT: Replace with your VPC ID
-            SUBNET_IDS="subnet-xxxxxxxxxxxxxxxxx,subnet-yyyyyyyyyyyyyyyyy" # <<-- IMPORTANT: Replace with your Subnet IDs
-
             aws cloudformation deploy \
               --stack-name ${APP_NAME}-FargateStack \
               --template-file ecs-fargate-stack.yml \
@@ -55,11 +51,11 @@ jobs:
                 AppName=${APP_NAME} \
                 ImageRepositoryName=${ECR_REPOSITORY_NAME} \
                 ImageTag=${CIRCLE_SHA1} \
-                VpcId=${VPC_ID} \
-                SubnetIds=${SUBNET_IDS} \
+                VpcId=${AWS_VPC_ID} \
+                SubnetIds=${AWS_SUBNET_IDS} \
               --region ${AWS_REGION}
     environment:
-      APP_NAME: my-express-app # Match your CloudFormation AppName parameter
+      APP_NAME: everything-express # Match your CloudFormation AppName parameter
 
 workflows:
   version: 2
@@ -68,10 +64,10 @@ workflows:
       - build-and-push-docker-image:
           filters:
             branches:
-              only: main
+              only: add-circle-ci
       - deploy-to-ecs-fargate:
           requires:
             - build-and-push-docker-image # This job runs after the Docker image is pushed
           filters:
             branches:
-              only: main
+              only: add-circle-ci
