@@ -51,7 +51,7 @@ jobs:
           command: |
             aws cloudformation deploy \
               --stack-name ${APP_NAME}-FargateStack \
-              --template-file ecs-fargate-stack.yml \
+              --template-file ecs-stack.yml \
               --capabilities CAPABILITY_IAM \
               --parameter-overrides \
                 AppName=${APP_NAME} \
