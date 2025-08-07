@@ -9,7 +9,7 @@ orbs:
 jobs:
   build-and-push-docker-image:
     docker:
-      - image: cimg/base:2024.06
+      - image: cimg/base:2025.08
     steps:
       - checkout
       - setup_remote_docker:
@@ -39,7 +39,7 @@ jobs:
 
   deploy-to-ecs-fargate:
     docker:
-      - image: cimg/base:2024.06
+      - image: cimg/base:2025.08
     steps:
       - checkout
       - aws-cli/setup:
