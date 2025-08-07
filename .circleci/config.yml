@@ -9,11 +9,10 @@ orbs:
 jobs:
   build-and-push-docker-image:
     docker:
-      - image: cimg/base:2025.08
+      - image: cimg/node:18.20.2
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 20.10.17
+      - setup_remote_docker
       - run:
           name: Install Node.js dependencies
           command: npm install
