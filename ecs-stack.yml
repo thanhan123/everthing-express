@@ -9,13 +9,13 @@ Parameters:
   AppName:
     Type: String
     Description: A unique name for your application. This will be used in resource names.
-    Default: my-express-app
+    Default: everything-express-app
 
   ImageRepositoryName:
     Type: String
     Description: The name of your ECR repository (e.g., 'my-express-app-repo').
     # This should match the ECR_REPOSITORY_NAME in your CircleCI config
-    Default: my-express-app-repo
+    Default: everything-express-app-repo
 
   ImageTag:
     Type: String
@@ -126,10 +126,10 @@ Resources:
           ToPort: 80
           CidrIp: 0.0.0.0/0 # Allow HTTP access from anywhere
         # Add HTTPS if you plan to use it
-        # - IpProtocol: tcp
-        #   FromPort: 443
-        #   ToPort: 443
-        #   CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
           Value: !Sub ${AppName}-ALB-SG
@@ -230,6 +230,7 @@ Resources:
   # --- ECS Service ---
   EcsService:
     Type: AWS::ECS::Service
+    DependsOn: HTTPListener
     Properties:
       Cluster: !Ref EcsCluster
       ServiceName: !Sub ${AppName}-Service
@@ -249,13 +250,13 @@ Resources:
           ContainerPort: !Ref ContainerPort
           TargetGroupArn: !Ref TargetGroup
       # Optional: Auto Scaling (uncomment and configure if needed)
-      # HealthCheckGracePeriodSeconds: 60
-      # DeploymentConfiguration:
-      #   MaximumPercent: 200
-      #   MinimumHealthyPercent: 100
-      #   DeploymentCircuitBreaker:
-      #     Enable: true
-      #     Rollback: true
+      HealthCheckGracePeriodSeconds: 60
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
       Tags:
         - Key: Name
           Value: !Sub ${AppName}-Service
